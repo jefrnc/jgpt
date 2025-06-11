@@ -26,14 +26,7 @@ def send_deployment_notification(commit_sha, commit_message):
     commit_msg_first_line = commit_message.split('\n')[0] if commit_message else 'No message'
     current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
     
-    message = f"""🚀 *Trading Bot Deployed Successfully*
-    
-📦 *Commit:* `{commit_sha_short}`
-📝 *Message:* {commit_msg_first_line}
-⏰ *Time:* {current_time}
-🖥️ *Server:* GCP VM (flask-vm)
-
-✅ Bot is running and scanning for gaps..."""
+    message = f"🚀 Trading Bot Deployed Successfully - `{commit_sha_short}`"
     
     # Send message
     try:
