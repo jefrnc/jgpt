@@ -194,10 +194,64 @@ jobs:
     - name: 📱 Deployment Notification
       if: always()
       run: |
+        # Get commit info
+        COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+        
         if [ "${{ job.status }}" == "success" ]; then
           echo "✅ Deployment successful!"
           echo "🤖 Trading bot is now running on GCP VM"
           echo "📊 Monitor: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -f'"
+          
+          # Send Telegram notification
+          cat > /tmp/deploy_notify.sh << 'EOF'
+          #!/bin/bash
+          cd "$HOME/trading-bot"
+          source venv/bin/activate
+          
+          PYTHONPATH=. python -c "
+import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+token = os.getenv('TELEGRAM_BOT_TOKEN')
+chat_id = os.getenv('TELEGRAM_CHAT_ID')
+
+if token and chat_id:
+    message = '''🚀 *Trading Bot Deployed Successfully*
+    
+📦 *Commit:* \`${{ github.sha }}\`
+📝 *Message:* ${{ github.event.head_commit.message }}
+⏰ *Time:* $(date '+%Y-%m-%d %H:%M:%S UTC')
+🖥️ *Server:* GCP VM (flask-vm)
+
+✅ Bot is running and scanning for gaps...
+    '''
+    
+    response = requests.post(f'https://api.telegram.org/bot{token}/sendMessage', {
+        'chat_id': chat_id,
+        'text': message,
+        'parse_mode': 'Markdown'
+    })
+    
+    if response.status_code == 200:
+        print('✅ Deployment notification sent to Telegram')
+    else:
+        print(f'⚠️ Failed to send Telegram notification: {response.text}')
+else:
+    print('⚠️ Telegram credentials not configured')
+"
+          EOF
+          
+          chmod +x /tmp/deploy_notify.sh
+          
+          gcloud compute ssh ${{ env.VM_NAME }} \
+            --zone=${{ env.ZONE }} \
+            --command="$(cat /tmp/deploy_notify.sh)" \
+            --ssh-key-file=/tmp/ssh_key || echo "⚠️ Failed to send notification"
+          
         else
           echo "❌ Deployment failed!"
           echo "🔍 Check logs: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -n 20'"
