@@ -1,0 +1,225 @@
+name: 🚀 Deploy Trading Bot to GCP
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Manual trigger
+
+env:
+  VM_NAME: flask-vm
+  PROJECT_ID: gap-detector-49a13
+  ZONE: us-central1-a
+
+jobs:
+  deploy:
+    name: Deploy to GCP VM
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+        
+    - name: 🔑 Setup SSH
+      run: |
+        echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > /tmp/ssh_key
+        chmod 600 /tmp/ssh_key
+        
+    - name: 🏥 Health Check - VM Status
+      run: |
+        gcloud compute instances describe ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --format="value(status)" || echo "VM not found"
+          
+    - name: 🛠️ Initial VM Setup (if needed)
+      run: |
+        # Check if trading bot directory exists
+        SETUP_NEEDED=$(gcloud compute ssh ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --command="[ ! -d '/home/\$USER/trading-bot' ] && echo 'true' || echo 'false'" \
+          --ssh-key-file=/tmp/ssh_key \
+          --quiet || echo 'true')
+          
+        if [ "$SETUP_NEEDED" = "true" ]; then
+          echo "🔧 First time setup - installing dependencies..."
+          gcloud compute ssh ${{ env.VM_NAME }} \
+            --zone=${{ env.ZONE }} \
+            --command="sudo apt update && sudo apt install -y python3 python3-pip python3-venv git curl htop build-essential python3-dev pkg-config" \
+            --ssh-key-file=/tmp/ssh_key
+        else
+          echo "✅ VM already configured"
+        fi
+        
+    - name: 📦 Deploy Application
+      run: |
+        echo "🚀 Deploying trading bot..."
+        
+        # Create deployment script
+        cat > /tmp/deploy_script.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "📁 Setting up directory..."
+        TRADING_DIR="/home/$USER/trading-bot"
+        
+        # Clone or update repository
+        if [ -d "$TRADING_DIR" ]; then
+          echo "📥 Updating existing repository..."
+          cd "$TRADING_DIR"
+          git fetch origin
+          git reset --hard origin/main
+        else
+          echo "📥 Cloning repository..."
+          git clone https://github.com/jefrnc/jgpt.git "$TRADING_DIR"
+          cd "$TRADING_DIR"
+        fi
+        
+        # Setup virtual environment
+        echo "🐍 Setting up Python environment..."
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Create directories
+        mkdir -p logs data
+        chmod +x deploy/*.sh src/main.py test_*.py
+        
+        # Setup environment file if not exists
+        if [ ! -f ".env" ]; then
+          echo "⚙️ Creating .env template..."
+          cp .env.example .env
+          echo "⚠️ WARNING: .env created from template - configure API keys!"
+        fi
+        
+        echo "✅ Application updated successfully"
+        EOF
+        
+        chmod +x /tmp/deploy_script.sh
+        
+        # Execute deployment
+        gcloud compute ssh ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --command="$(cat /tmp/deploy_script.sh)" \
+          --ssh-key-file=/tmp/ssh_key
+          
+    - name: 🔧 Setup Systemd Service
+      run: |
+        echo "🔧 Configuring systemd service..."
+        
+        cat > /tmp/service_setup.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        TRADING_DIR="/home/$USER/trading-bot"
+        cd "$TRADING_DIR"
+        
+        # Run service setup
+        bash deploy/setup_service.sh
+        
+        echo "✅ Systemd service configured"
+        EOF
+        
+        chmod +x /tmp/service_setup.sh
+        
+        gcloud compute ssh ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --command="$(cat /tmp/service_setup.sh)" \
+          --ssh-key-file=/tmp/ssh_key
+          
+    - name: 🚀 Start Trading Bot
+      run: |
+        echo "🚀 Starting trading bot service..."
+        
+        cat > /tmp/start_bot.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        # Reload systemd and start service
+        sudo systemctl daemon-reload
+        
+        # Stop service if running
+        if systemctl is-active --quiet trading-bot; then
+          echo "🔄 Restarting existing service..."
+          sudo systemctl restart trading-bot
+        else
+          echo "▶️ Starting new service..."
+          sudo systemctl start trading-bot
+        fi
+        
+        # Enable auto-start
+        sudo systemctl enable trading-bot
+        
+        # Wait and check status
+        sleep 5
+        
+        if systemctl is-active --quiet trading-bot; then
+          echo "✅ Trading bot started successfully!"
+        else
+          echo "❌ Failed to start trading bot"
+          sudo systemctl status trading-bot --no-pager -l
+          exit 1
+        fi
+        EOF
+        
+        chmod +x /tmp/start_bot.sh
+        
+        gcloud compute ssh ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --command="$(cat /tmp/start_bot.sh)" \
+          --ssh-key-file=/tmp/ssh_key
+          
+    - name: 🏥 Health Check
+      run: |
+        echo "🏥 Running health checks..."
+        
+        cat > /tmp/health_check.sh << 'EOF'
+        #!/bin/bash
+        
+        TRADING_DIR="/home/$USER/trading-bot"
+        cd "$TRADING_DIR"
+        
+        echo "📊 System Status:"
+        sudo systemctl status trading-bot --no-pager -l || true
+        
+        echo ""
+        echo "📝 Recent Logs:"
+        journalctl -u trading-bot -n 5 --no-pager || true
+        
+        echo ""
+        echo "🔍 Process Check:"
+        ps aux | grep python | grep main.py || echo "No bot process found"
+        
+        echo ""
+        echo "💻 Resource Usage:"
+        free -h
+        df -h /
+        EOF
+        
+        gcloud compute ssh ${{ env.VM_NAME }} \
+          --zone=${{ env.ZONE }} \
+          --command="$(cat /tmp/health_check.sh)" \
+          --ssh-key-file=/tmp/ssh_key
+          
+    - name: 📱 Deployment Notification
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful!"
+          echo "🤖 Trading bot is now running on GCP VM"
+          echo "📊 Monitor: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -f'"
+        else
+          echo "❌ Deployment failed!"
+          echo "🔍 Check logs: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -n 20'"
+        fi
+        
+    - name: 🧹 Cleanup
+      if: always()
+      run: |
+        rm -f /tmp/ssh_key /tmp/*.sh
