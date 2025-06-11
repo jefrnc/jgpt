@@ -118,10 +118,12 @@ flake8 src/
 ## 📈 Roadmap
 
 - [x] Setup inicial y estructura
-- [ ] Conexión Alpaca API
-- [ ] Scanner básico de gaps
-- [ ] Sistema de alertas Telegram
+- [x] Conexión Alpaca API
+- [x] Scanner básico de gaps
+- [x] Sistema de alertas Telegram
+- [x] **SISTEMA FUNCIONAL** 🎉
 - [ ] Integración AI para análisis
+- [ ] Scanner de float/fundamentales  
 - [ ] Dashboard web
 - [ ] Backtesting framework
 
