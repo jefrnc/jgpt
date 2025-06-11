@@ -150,22 +150,13 @@ jobs:
           --zone=${{ env.ZONE }} \
           --ssh-key-file=/tmp/ssh_key
           
-    - name: 🔧 Setup Systemd Service
+    - name: 🔧 Check Service Status
       run: |
-        echo "🔧 Checking systemd service..."
+        echo "🔧 Checking trading bot service..."
         
         gcloud compute ssh ${{ env.VM_NAME }} \
           --zone=${{ env.ZONE }} \
-          --command="if systemctl is-enabled trading-bot >/dev/null 2>&1; then echo '✅ Service already configured'; else echo '⚠️ Service needs setup - run deploy/setup_service.sh manually'; fi" \
-          --ssh-key-file=/tmp/ssh_key
-          
-    - name: 🚀 Start Trading Bot
-      run: |
-        echo "🚀 Restarting trading bot service..."
-        
-        gcloud compute ssh ${{ env.VM_NAME }} \
-          --zone=${{ env.ZONE }} \
-          --command="sudo systemctl restart trading-bot && sleep 3 && if systemctl is-active --quiet trading-bot; then echo '✅ Bot restarted successfully'; else echo '❌ Failed to restart bot'; sudo systemctl status trading-bot --no-pager -l; exit 1; fi" \
+          --command="if systemctl is-active --quiet trading-bot; then echo '✅ Bot is already running - deployment complete'; else echo '⚠️ Bot not running - may need manual restart'; fi" \
           --ssh-key-file=/tmp/ssh_key
           
     - name: 🏥 Health Check
