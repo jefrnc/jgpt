@@ -133,13 +133,16 @@ class GapScanner:
     
     def get_market_movers(self) -> List[str]:
         """Get list of potential movers to scan"""
-        # For now, we'll use a predefined list of liquid small caps
-        # In production, this would come from a screener or API
+        # Mix of volatile small/micro caps and some liquid names
+        # TODO: Implement dynamic screener for top % gainers/losers
         watchlist = [
-            'AAPL', 'TSLA', 'AMD', 'NVDA', 'PLTR', 'SOFI', 'NIO', 'LCID',
-            'RIVN', 'GRAB', 'DKNG', 'HOOD', 'COIN', 'MARA', 'RIOT', 'HIMS',
-            'OPEN', 'UPST', 'AFRM', 'SQ', 'ROKU', 'SNAP', 'PINS', 'TWLO',
-            'NET', 'DDOG', 'SNOW', 'U', 'RBLX', 'ABNB', 'DASH', 'LYFT'
+            # Micro/Small caps prone to gaps
+            'KLTO', 'KZIA', 'VTAK', 'HSDT', 'CARM', 'OEGD', 'KNW', 'SIR',
+            'SXTC', 'IMPP', 'INDO', 'BFRI', 'XELA', 'MULN', 'BBIG', 'PROG',
+            'ATER', 'GFAI', 'RDBX', 'NEGG', 'BKKT', 'DWAC', 'PHUN', 'MARK',
+            'IZEA', 'NAKD', 'SNDL', 'CLOV', 'WKHS', 'RIDE', 'NKLA', 'GOEV',
+            # Some liquid names for comparison
+            'AMC', 'GME', 'BBBY', 'SOFI', 'PLTR', 'NIO', 'MARA', 'RIOT'
         ]
         return watchlist
     
