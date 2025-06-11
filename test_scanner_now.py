@@ -22,7 +22,7 @@ def test_scanners():
     
     # Initialize components
     client = AlpacaClient()
-    gap_scanner = GapScanner(client)
+    gap_scanner = GapScanner()  # No need to pass client
     float_screener = FloatScreener()
     news_scanner = NewsScanner()
     
