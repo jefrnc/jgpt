@@ -32,7 +32,9 @@ jobs:
     - name: 🔑 Setup SSH
       run: |
         echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > /tmp/ssh_key
+        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDTnAkDxn/uapY1M5fPNKmAYbKsaHz+ziGwpNWGeril2 Joseph@flask-vm" > /tmp/ssh_key.pub
         chmod 600 /tmp/ssh_key
+        chmod 644 /tmp/ssh_key.pub
         
     - name: 🏥 Health Check - VM Status
       run: |
