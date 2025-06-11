@@ -1,6 +1,17 @@
-# Small-Cap Trading Edge System
+# Small-Cap Trading Edge System 🚀
 
 Sistema automatizado para detectar oportunidades de trading en small caps con enfoque en overnight breakouts.
+
+## 📊 Estado del Sistema
+
+**✅ Bot Activo en GCP VM** - Funcionando 24/7 con auto-deployment desde GitHub Actions
+
+**🔥 Características principales:**
+- Gap scanner automático (>5% gaps)
+- Float screener para microfloat detection  
+- Alertas de Telegram en tiempo real
+- Market hours detection inteligente
+- Auto-deployment con cada push to main
 
 ## 🚀 Quick Start
 
