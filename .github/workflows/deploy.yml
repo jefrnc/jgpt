@@ -194,66 +194,15 @@ jobs:
     - name: 📱 Deployment Notification
       if: always()
       run: |
-        # Get commit info
-        COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-        
         if [ "${{ job.status }}" == "success" ]; then
           echo "✅ Deployment successful!"
           echo "🤖 Trading bot is now running on GCP VM"
           echo "📊 Monitor: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -f'"
           
-          # Send Telegram notification
-          cat > /tmp/deploy_notify.sh << EOF
-          #!/bin/bash
-          cd "\$HOME/trading-bot"
-          source venv/bin/activate
-          
-          PYTHONPATH=. python -c "
-import os
-import requests
-from dotenv import load_dotenv
-from datetime import datetime
-
-load_dotenv()
-
-token = os.getenv('TELEGRAM_BOT_TOKEN')
-chat_id = os.getenv('TELEGRAM_CHAT_ID')
-
-if token and chat_id:
-    commit_sha = '${{ github.sha }}'[:7]
-    commit_msg = '''${{ github.event.head_commit.message }}'''
-    current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-    
-    message = f'''🚀 *Trading Bot Deployed Successfully*
-    
-📦 *Commit:* \`{commit_sha}\`
-📝 *Message:* {commit_msg.split(chr(10))[0]}
-⏰ *Time:* {current_time}
-🖥️ *Server:* GCP VM (flask-vm)
-
-✅ Bot is running and scanning for gaps...'''
-    
-    response = requests.post(f'https://api.telegram.org/bot{token}/sendMessage', {
-        'chat_id': chat_id,
-        'text': message,
-        'parse_mode': 'Markdown'
-    })
-    
-    if response.status_code == 200:
-        print('✅ Deployment notification sent to Telegram')
-    else:
-        print(f'⚠️ Failed to send Telegram notification: {response.text}')
-else:
-    print('⚠️ Telegram credentials not configured')
-"
-          EOF
-          
-          chmod +x /tmp/deploy_notify.sh
-          
+          # Send Telegram notification using Python script
           gcloud compute ssh ${{ env.VM_NAME }} \
             --zone=${{ env.ZONE }} \
-            --command="$(cat /tmp/deploy_notify.sh)" \
+            --command="cd trading-bot && source venv/bin/activate && python deploy/send_telegram_notification.py '${{ github.sha }}' '${{ github.event.head_commit.message }}'" \
             --ssh-key-file=/tmp/ssh_key || echo "⚠️ Failed to send notification"
           
         else
