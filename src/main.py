@@ -12,6 +12,7 @@ from datetime import datetime
 import schedule
 from dotenv import load_dotenv
 from src.scanners.gap_scanner import GapScanner
+from src.scanners.float_screener import FloatScreener
 from src.alerts.telegram_bot import TelegramAlertBot
 from src.utils.logger import setup_logger
 from src.utils.market_hours import MarketHoursManager
@@ -23,11 +24,13 @@ class TradingBot:
     def __init__(self, debug=False):
         self.logger = setup_logger('main', 'DEBUG' if debug else 'INFO')
         self.gap_scanner = GapScanner()
+        self.float_screener = FloatScreener()
         self.telegram_bot = TelegramAlertBot()
         self.market_hours = MarketHoursManager()
         self.scan_interval = int(os.getenv('SCANNER_INTERVAL', 300))  # 5 minutes default
         self.is_running = True
         self.alerts_enabled = True
+        self.float_screening_enabled = True
         
     def run_gap_scan(self):
         """Execute gap scanner"""
@@ -48,23 +51,153 @@ class TradingBot:
             # Get symbols to scan
             symbols = self.gap_scanner.get_market_movers()
             
-            # Run scan
-            results = self.gap_scanner.scan_watchlist(symbols)
+            # Run gap scan
+            gap_results = self.gap_scanner.scan_watchlist(symbols)
+            
+            # Run float screening on gap results if enabled
+            enhanced_results = []
+            if gap_results and self.float_screening_enabled:
+                self.logger.info("🔍 Running float analysis on gap stocks...")
+                gap_symbols = [gap['symbol'] for gap in gap_results]
+                
+                for gap in gap_results:
+                    # Add float data to gap result
+                    float_data = self.float_screener.screen_symbol(gap['symbol'])
+                    if float_data:
+                        gap['float_data'] = float_data
+                        gap['float_score'] = float_data.get('screening_results', {}).get('float_score', 0)
+                        gap['is_microfloat'] = float_data.get('screening_results', {}).get('is_microfloat', False)
+                        gap['squeeze_setup'] = float_data.get('screening_results', {}).get('squeeze_setup', False)
+                    enhanced_results.append(gap)
+                
+                # Sort by combined score (gap % + float score)
+                enhanced_results.sort(key=lambda x: (
+                    abs(x.get('gap_percent', 0)) + x.get('float_score', 0) * 0.1
+                ), reverse=True)
+            else:
+                enhanced_results = gap_results
             
             # Display results
-            if results:
-                formatted = self.gap_scanner.format_results(results)
+            if enhanced_results:
+                formatted = self._format_enhanced_results(enhanced_results)
                 print(formatted)
                 
                 # Send Telegram alerts
                 if self.alerts_enabled and self.telegram_bot.enabled:
-                    self.logger.info("Sending Telegram alerts...")
-                    asyncio.run(self.telegram_bot.send_gap_alerts(results))
+                    self.logger.info("Sending enhanced Telegram alerts...")
+                    asyncio.run(self._send_enhanced_alerts(enhanced_results))
             else:
                 self.logger.info("No significant gaps found in this scan")
                 
         except Exception as e:
             self.logger.error(f"Error during scan: {str(e)}")
+    
+    def _format_enhanced_results(self, results):
+        """Format results with float data"""
+        if not results:
+            return "No gaps found matching criteria."
+        
+        output = f"\n{'='*70}\n"
+        output += f"Enhanced Gap + Float Scanner Results - {datetime.now().strftime('%Y-%m-%d %H:%M:%S ET')}\n"
+        output += f"{'='*70}\n\n"
+        
+        for gap in results:
+            output += f"Symbol: {gap['symbol']}\n"
+            output += f"Gap: {gap['gap_direction']} {abs(gap['gap_percent'])}%\n"
+            output += f"Price: ${gap['previous_close']:.2f} → ${gap['current_price']:.2f}\n"
+            output += f"Volume: {gap['volume']:,}\n"
+            
+            # Add float data if available
+            if 'float_data' in gap:
+                float_data = gap['float_data']
+                float_shares = float_data.get('float_shares', 0)
+                if float_shares:
+                    if float_shares < 1_000_000:
+                        float_str = f"{float_shares/1000:.0f}K"
+                    else:
+                        float_str = f"{float_shares/1_000_000:.1f}M"
+                    
+                    output += f"Float: {float_str} shares ({float_data.get('float_category', 'unknown')})\n"
+                    output += f"Float Score: {gap.get('float_score', 0)}/100\n"
+                    
+                    if gap.get('is_microfloat'):
+                        output += "🔥 MICROFLOAT!\n"
+                    if gap.get('squeeze_setup'):
+                        output += "🚨 SQUEEZE SETUP!\n"
+            
+            output += f"{'-'*50}\n"
+        
+        return output
+    
+    async def _send_enhanced_alerts(self, results):
+        """Send enhanced alerts with float data"""
+        for gap in results[:3]:  # Top 3 only
+            # Create enhanced message
+            message = self._format_enhanced_alert(gap)
+            await self.telegram_bot.send_alert(message)
+            await asyncio.sleep(2)  # Delay between messages
+    
+    def _format_enhanced_alert(self, gap_data):
+        """Format enhanced alert with float information"""
+        direction_emoji = "🟢" if gap_data['gap_direction'] == 'UP' else "🔴"
+        gap_percent = abs(gap_data['gap_percent'])
+        
+        # Determine alert level
+        if gap_percent >= 20:
+            alert_emoji = "🚨🚨🚨"
+            alert_text = "MEGA GAP!"
+        elif gap_percent >= 10:
+            alert_emoji = "🔥🔥"
+            alert_text = "HOT GAP!"
+        else:
+            alert_emoji = "📊"
+            alert_text = "Gap Alert"
+        
+        # Check for float enhancement
+        if gap_data.get('is_microfloat'):
+            alert_emoji = "🔥🚨🔥"
+            alert_text = "MICROFLOAT GAP!"
+        elif gap_data.get('squeeze_setup'):
+            alert_emoji = "🚨💥🚨"
+            alert_text = "SQUEEZE + GAP!"
+        
+        message = (
+            f"{alert_emoji} *{alert_text}* {alert_emoji}\n\n"
+            f"{direction_emoji} *${gap_data['symbol']}* {direction_emoji}\n"
+            f"Gap: *{gap_data['gap_direction']} {gap_percent:.1f}%*\n"
+            f"Precio: ${gap_data['previous_close']:.2f} → ${gap_data['current_price']:.2f}\n"
+            f"Volumen: {gap_data['volume']:,}\n"
+        )
+        
+        # Add float information if available
+        if 'float_data' in gap_data:
+            float_data = gap_data['float_data']
+            float_shares = float_data.get('float_shares', 0)
+            
+            if float_shares:
+                if float_shares < 1_000_000:
+                    float_str = f"{float_shares/1000:.0f}K"
+                else:
+                    float_str = f"{float_shares/1_000_000:.1f}M"
+                
+                message += f"🔍 Float: {float_str} shares\n"
+                message += f"📊 Float Score: {gap_data.get('float_score', 0)}/100\n"
+                
+                if gap_data.get('is_microfloat'):
+                    message += "🔥 *MICROFLOAT DETECTED!*\n"
+                if gap_data.get('squeeze_setup'):
+                    message += "🚨 *SQUEEZE SETUP!*\n"
+        
+        # Add potential setup info
+        if gap_percent >= 10 or gap_data.get('float_score', 0) > 70:
+            message += "\n💡 *Setup Potencial:* Enhanced Gap & Go\n"
+            multiplier = 1.1 if gap_data.get('is_microfloat') else 1.05
+            message += f"🎯 Target: ${gap_data['current_price'] * multiplier:.2f}\n"
+            message += f"🛑 Stop: ${gap_data['current_price'] * 0.95:.2f}\n"
+            
+        message += f"\n⏰ {datetime.now().strftime('%H:%M:%S ET')}"
+        
+        return message
     
     def run_continuous(self):
         """Run scanner continuously with smart scheduling"""
