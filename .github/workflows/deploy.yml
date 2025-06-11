@@ -47,7 +47,7 @@ jobs:
         # Check if trading bot directory exists
         SETUP_NEEDED=$(gcloud compute ssh ${{ env.VM_NAME }} \
           --zone=${{ env.ZONE }} \
-          --command="[ ! -d '/home/\$USER/trading-bot' ] && echo 'true' || echo 'false'" \
+          --command="[ ! -d '/home/Joseph/trading-bot' ] && echo 'true' || echo 'false'" \
           --ssh-key-file=/tmp/ssh_key \
           --quiet || echo 'true')
           
@@ -71,7 +71,7 @@ jobs:
         set -e
         
         echo "📁 Setting up directory..."
-        TRADING_DIR="/home/$USER/trading-bot"
+        TRADING_DIR="/home/Joseph/trading-bot"
         
         # Clone or update repository
         if [ -d "$TRADING_DIR" ]; then
@@ -122,7 +122,7 @@ jobs:
         #!/bin/bash
         set -e
         
-        TRADING_DIR="/home/$USER/trading-bot"
+        TRADING_DIR="/home/Joseph/trading-bot"
         cd "$TRADING_DIR"
         
         # Run service setup
@@ -187,7 +187,7 @@ jobs:
         cat > /tmp/health_check.sh << 'EOF'
         #!/bin/bash
         
-        TRADING_DIR="/home/$USER/trading-bot"
+        TRADING_DIR="/home/Joseph/trading-bot"
         cd "$TRADING_DIR"
         
         echo "📊 System Status:"
