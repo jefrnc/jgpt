@@ -141,15 +141,15 @@ ENVEOF
         
         chmod +x /tmp/deploy_script.sh
         
-        # Copy .env file to VM
-        gcloud compute scp /tmp/bot.env ${{ env.VM_NAME }}:~/trading-bot/.env \
-          --zone=${{ env.ZONE }} \
-          --ssh-key-file=/tmp/ssh_key
-        
-        # Execute deployment
+        # Execute deployment first
         gcloud compute ssh ${{ env.VM_NAME }} \
           --zone=${{ env.ZONE }} \
           --command="$(cat /tmp/deploy_script.sh)" \
+          --ssh-key-file=/tmp/ssh_key
+          
+        # Copy .env file to VM after directory is created
+        gcloud compute scp /tmp/bot.env ${{ env.VM_NAME }}:~/trading-bot/.env \
+          --zone=${{ env.ZONE }} \
           --ssh-key-file=/tmp/ssh_key
           
     - name: 🔧 Setup Systemd Service
