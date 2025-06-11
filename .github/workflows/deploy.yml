@@ -174,7 +174,7 @@ jobs:
         fi
         
         # Create systemd service with correct paths
-        sudo tee /etc/systemd/system/trading-bot.service > /dev/null <<SERVICEEOF
+        sudo tee /etc/systemd/system/trading-bot.service > /dev/null << 'SERVICEEOF'
 [Unit]
 Description=Trading Bot - Small Cap Gap Scanner
 After=network.target
@@ -182,9 +182,9 @@ After=network.target
 [Service]
 Type=simple
 User=Joseph
-WorkingDirectory=$TRADING_DIR
-Environment=PYTHONPATH=$TRADING_DIR
-ExecStart=$TRADING_DIR/venv/bin/python src/main.py
+WorkingDirectory=/home/Joseph/trading-bot
+Environment=PYTHONPATH=/home/Joseph/trading-bot
+ExecStart=/home/Joseph/trading-bot/venv/bin/python src/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
