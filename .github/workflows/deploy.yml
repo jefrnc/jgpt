@@ -65,40 +65,8 @@ jobs:
       run: |
         echo "🚀 Deploying trading bot..."
         
-        # Create deployment script
-        cat > /tmp/deploy_script.sh << 'EOF'
-        #!/bin/bash
-        set -e
-        
-        echo "📁 Setting up directory..."
-        TRADING_DIR="$HOME/trading-bot"
-        
-        # Clone or update repository
-        if [ -d "$TRADING_DIR" ]; then
-          echo "📥 Updating existing repository..."
-          cd "$TRADING_DIR"
-          git fetch origin
-          git reset --hard origin/main
-        else
-          echo "📥 Cloning repository..."
-          git clone https://github.com/jefrnc/jgpt.git "$TRADING_DIR"
-          cd "$TRADING_DIR"
-        fi
-        
-        # Setup virtual environment
-        echo "🐍 Setting up Python environment..."
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        
-        # Create directories
-        mkdir -p logs data
-        chmod +x deploy/*.sh src/main.py test_*.py
-        
-        # Create .env with secrets from GitHub
-        echo "⚙️ Creating .env with API credentials..."
-        cat > .env << ENVEOF
+        # Create .env file with secrets
+        cat > /tmp/bot.env << 'ENVEOF'
 # Alpaca API Credentials  
 ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}
 ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
@@ -137,10 +105,46 @@ OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 ENVEOF
         
+        # Create deployment script
+        cat > /tmp/deploy_script.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "📁 Setting up directory..."
+        TRADING_DIR="$HOME/trading-bot"
+        
+        # Clone or update repository
+        if [ -d "$TRADING_DIR" ]; then
+          echo "📥 Updating existing repository..."
+          cd "$TRADING_DIR"
+          git fetch origin
+          git reset --hard origin/main
+        else
+          echo "📥 Cloning repository..."
+          git clone https://github.com/jefrnc/jgpt.git "$TRADING_DIR"
+          cd "$TRADING_DIR"
+        fi
+        
+        # Setup virtual environment
+        echo "🐍 Setting up Python environment..."
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Create directories
+        mkdir -p logs data
+        chmod +x deploy/*.sh src/main.py test_*.py
+        
         echo "✅ Application updated successfully"
         EOF
         
         chmod +x /tmp/deploy_script.sh
+        
+        # Copy .env file to VM
+        gcloud compute scp /tmp/bot.env ${{ env.VM_NAME }}:~/trading-bot/.env \
+          --zone=${{ env.ZONE }} \
+          --ssh-key-file=/tmp/ssh_key
         
         # Execute deployment
         gcloud compute ssh ${{ env.VM_NAME }} \
