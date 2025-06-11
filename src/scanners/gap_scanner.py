@@ -37,9 +37,9 @@ class GapScanner:
             # Use snapshot which includes previous daily bar
             snapshot = self.client.get_snapshot(symbol)
             
-            if snapshot and snapshot.daily_bar:
-                # The daily_bar in snapshot is the previous trading day's data
-                return float(snapshot.daily_bar.close)
+            if snapshot and snapshot.previous_daily_bar:
+                # Use previous_daily_bar for the actual previous trading day
+                return float(snapshot.previous_daily_bar.close)
             
             return None
             
