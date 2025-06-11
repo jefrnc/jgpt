@@ -65,45 +65,43 @@ jobs:
       run: |
         echo "🚀 Deploying trading bot..."
         
-        # Create .env file with secrets
-        cat > /tmp/bot.env << ENVEOF
-# Alpaca API Credentials  
-ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}
-ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
-ALPACA_BASE_URL=https://paper-api.alpaca.markets
-ALPACA_DATA_URL=https://data.alpaca.markets
-
-# Trading Parameters
-SCANNER_INTERVAL=300
-MIN_GAP_PERCENT=5
-MAX_FLOAT_MILLIONS=50
-MIN_PRICE=0.50
-MAX_PRICE=20.00
-
-# Trading Hours (Eastern Time)
-PREMARKET_START=04:00
-PREMARKET_END=09:30
-MARKET_OPEN=09:30
-MARKET_CLOSE=16:00
-AFTERHOURS_END=20:00
-
-# Scanner Schedule
-ENABLE_PREMARKET=true
-ENABLE_AFTERHOURS=false
-WEEKEND_PAUSE=true
-
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-
-# Finnhub API
-FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
-
-# Other APIs (optional)
-BENZINGA_API_KEY=
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-ENVEOF
+        # Create .env file with secrets using echo
+        echo "# Alpaca API Credentials" > /tmp/bot.env
+        echo "ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}" >> /tmp/bot.env
+        echo "ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}" >> /tmp/bot.env
+        echo "ALPACA_BASE_URL=https://paper-api.alpaca.markets" >> /tmp/bot.env
+        echo "ALPACA_DATA_URL=https://data.alpaca.markets" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Trading Parameters" >> /tmp/bot.env
+        echo "SCANNER_INTERVAL=300" >> /tmp/bot.env
+        echo "MIN_GAP_PERCENT=5" >> /tmp/bot.env
+        echo "MAX_FLOAT_MILLIONS=50" >> /tmp/bot.env
+        echo "MIN_PRICE=0.50" >> /tmp/bot.env
+        echo "MAX_PRICE=20.00" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Trading Hours (Eastern Time)" >> /tmp/bot.env
+        echo "PREMARKET_START=04:00" >> /tmp/bot.env
+        echo "PREMARKET_END=09:30" >> /tmp/bot.env
+        echo "MARKET_OPEN=09:30" >> /tmp/bot.env
+        echo "MARKET_CLOSE=16:00" >> /tmp/bot.env
+        echo "AFTERHOURS_END=20:00" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Scanner Schedule" >> /tmp/bot.env
+        echo "ENABLE_PREMARKET=true" >> /tmp/bot.env
+        echo "ENABLE_AFTERHOURS=false" >> /tmp/bot.env
+        echo "WEEKEND_PAUSE=true" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Telegram Bot" >> /tmp/bot.env
+        echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> /tmp/bot.env
+        echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Finnhub API" >> /tmp/bot.env
+        echo "FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}" >> /tmp/bot.env
+        echo "" >> /tmp/bot.env
+        echo "# Other APIs (optional)" >> /tmp/bot.env
+        echo "BENZINGA_API_KEY=" >> /tmp/bot.env
+        echo "OPENAI_API_KEY=" >> /tmp/bot.env
+        echo "ANTHROPIC_API_KEY=" >> /tmp/bot.env
         
         # Create deployment script
         cat > /tmp/deploy_script.sh << 'EOF'
