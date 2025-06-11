@@ -61,11 +61,27 @@ jgpt/
   ALPACA_SECRET_KEY=your_secret
   ```
 
+### Telegram Bot
+1. Crear un bot con [@BotFather](https://t.me/botfather) en Telegram
+2. Obtener el token del bot
+3. Configurar en `.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=tu_token_aqui
+   ```
+4. Ejecutar el bot para obtener tu Chat ID:
+   ```bash
+   python run_telegram_bot.py
+   ```
+5. Enviar `/start` al bot en Telegram
+6. Agregar el Chat ID a `.env`:
+   ```
+   TELEGRAM_CHAT_ID=tu_chat_id
+   ```
+
 ### APIs Adicionales (Próximamente)
 - **Finnhub**: Para datos fundamentales y float
 - **Benzinga**: Para noticias en tiempo real
 - **OpenAI/Claude**: Para análisis inteligente
-- **Telegram**: Para alertas instantáneas
 
 ## 🎯 Uso Básico
 

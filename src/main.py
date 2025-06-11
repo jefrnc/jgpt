@@ -7,10 +7,12 @@ import os
 import sys
 import time
 import argparse
+import asyncio
 from datetime import datetime
 import schedule
 from dotenv import load_dotenv
 from src.scanners.gap_scanner import GapScanner
+from src.alerts.telegram_bot import TelegramAlertBot
 from src.utils.logger import setup_logger
 
 load_dotenv()
@@ -20,8 +22,10 @@ class TradingBot:
     def __init__(self, debug=False):
         self.logger = setup_logger('main', 'DEBUG' if debug else 'INFO')
         self.gap_scanner = GapScanner()
+        self.telegram_bot = TelegramAlertBot()
         self.scan_interval = int(os.getenv('SCANNER_INTERVAL', 300))  # 5 minutes default
         self.is_running = True
+        self.alerts_enabled = True
         
     def run_gap_scan(self):
         """Execute gap scanner"""
@@ -48,8 +52,10 @@ class TradingBot:
                 formatted = self.gap_scanner.format_results(results)
                 print(formatted)
                 
-                # Here we would send alerts (Telegram, etc)
-                # TODO: Implement alert system
+                # Send Telegram alerts
+                if self.alerts_enabled and self.telegram_bot.enabled:
+                    self.logger.info("Sending Telegram alerts...")
+                    asyncio.run(self.telegram_bot.send_gap_alerts(results))
             else:
                 self.logger.info("No significant gaps found in this scan")
                 
