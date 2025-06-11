@@ -204,15 +204,16 @@ jobs:
           echo "📊 Monitor: gcloud compute ssh ${{ env.VM_NAME }} --zone=${{ env.ZONE }} --command='journalctl -u trading-bot -f'"
           
           # Send Telegram notification
-          cat > /tmp/deploy_notify.sh << 'EOF'
+          cat > /tmp/deploy_notify.sh << EOF
           #!/bin/bash
-          cd "$HOME/trading-bot"
+          cd "\$HOME/trading-bot"
           source venv/bin/activate
           
           PYTHONPATH=. python -c "
 import os
 import requests
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -220,15 +221,18 @@ token = os.getenv('TELEGRAM_BOT_TOKEN')
 chat_id = os.getenv('TELEGRAM_CHAT_ID')
 
 if token and chat_id:
-    message = '''🚀 *Trading Bot Deployed Successfully*
+    commit_sha = '${{ github.sha }}'[:7]
+    commit_msg = '''${{ github.event.head_commit.message }}'''
+    current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
     
-📦 *Commit:* \`${{ github.sha }}\`
-📝 *Message:* ${{ github.event.head_commit.message }}
-⏰ *Time:* $(date '+%Y-%m-%d %H:%M:%S UTC')
+    message = f'''🚀 *Trading Bot Deployed Successfully*
+    
+📦 *Commit:* \`{commit_sha}\`
+📝 *Message:* {commit_msg.split(chr(10))[0]}
+⏰ *Time:* {current_time}
 🖥️ *Server:* GCP VM (flask-vm)
 
-✅ Bot is running and scanning for gaps...
-    '''
+✅ Bot is running and scanning for gaps...'''
     
     response = requests.post(f'https://api.telegram.org/bot{token}/sendMessage', {
         'chat_id': chat_id,
