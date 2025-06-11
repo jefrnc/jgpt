@@ -96,12 +96,46 @@ jobs:
         mkdir -p logs data
         chmod +x deploy/*.sh src/main.py test_*.py
         
-        # Setup environment file if not exists
-        if [ ! -f ".env" ]; then
-          echo "⚙️ Creating .env template..."
-          cp .env.example .env
-          echo "⚠️ WARNING: .env created from template - configure API keys!"
-        fi
+        # Create .env with secrets from GitHub
+        echo "⚙️ Creating .env with API credentials..."
+        cat > .env << ENVEOF
+# Alpaca API Credentials  
+ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}
+ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
+ALPACA_BASE_URL=https://paper-api.alpaca.markets
+ALPACA_DATA_URL=https://data.alpaca.markets
+
+# Trading Parameters
+SCANNER_INTERVAL=300
+MIN_GAP_PERCENT=5
+MAX_FLOAT_MILLIONS=50
+MIN_PRICE=0.50
+MAX_PRICE=20.00
+
+# Trading Hours (Eastern Time)
+PREMARKET_START=04:00
+PREMARKET_END=09:30
+MARKET_OPEN=09:30
+MARKET_CLOSE=16:00
+AFTERHOURS_END=20:00
+
+# Scanner Schedule
+ENABLE_PREMARKET=true
+ENABLE_AFTERHOURS=false
+WEEKEND_PAUSE=true
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+
+# Finnhub API
+FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+
+# Other APIs (optional)
+BENZINGA_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+ENVEOF
         
         echo "✅ Application updated successfully"
         EOF
