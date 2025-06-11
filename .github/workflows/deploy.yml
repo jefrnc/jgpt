@@ -161,9 +161,41 @@ jobs:
         TRADING_DIR="$HOME/trading-bot"
         cd "$TRADING_DIR"
         
-        # Run service setup
-        bash deploy/setup_service.sh
+        # Check if service exists and is correctly configured
+        if systemctl is-enabled trading-bot >/dev/null 2>&1; then
+          echo "✅ Service already exists, checking configuration..."
+          CURRENT_PATH=$(systemctl show trading-bot -p ExecStart --value | grep -o '/home/[^/]*/trading-bot')
+          if [ "$CURRENT_PATH" = "$TRADING_DIR" ]; then
+            echo "✅ Service correctly configured, skipping setup"
+            exit 0
+          else
+            echo "⚠️ Service has wrong path, reconfiguring..."
+          fi
+        fi
         
+        # Create systemd service with correct paths
+        sudo tee /etc/systemd/system/trading-bot.service > /dev/null <<SERVICEEOF
+[Unit]
+Description=Trading Bot - Small Cap Gap Scanner
+After=network.target
+
+[Service]
+Type=simple
+User=Joseph
+WorkingDirectory=$TRADING_DIR
+Environment=PYTHONPATH=$TRADING_DIR
+ExecStart=$TRADING_DIR/venv/bin/python src/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+        
+        sudo systemctl daemon-reload
+        sudo systemctl enable trading-bot
         echo "✅ Systemd service configured"
         EOF
         
