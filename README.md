@@ -85,15 +85,34 @@ jgpt/
 
 ## 🎯 Uso Básico
 
-```python
-# Iniciar scanner (próximamente)
-python src/main.py
+```bash
+# Monitoreo continuo inteligente (recomendado)
+PYTHONPATH=. python src/main.py
 
-# Modo desarrollo
-python src/main.py --debug
+# Una sola ejecución
+PYTHONPATH=. python src/main.py --once
 
-# Backtest
-python src/backtest.py --date 2024-01-01
+# Modo debug
+PYTHONPATH=. python src/main.py --debug
+
+# Cambiar intervalo de escaneo
+PYTHONPATH=. python src/main.py --interval 180  # 3 minutos
+```
+
+## 💰 Optimización de API Quota
+
+El sistema conserva inteligentemente el uso de API:
+
+- **Premarket (4:00-9:30 AM)**: Escaneo cada 5 min 🔥
+- **Market Hours (9:30-4:00 PM)**: Escaneo cada 10 min 📊  
+- **After Hours (4:00-8:00 PM)**: Escaneo cada 15 min 📈
+- **Closed/Weekend**: Pausa total, chequeo cada 1 hora ⏸️
+
+**Configuración en `.env`:**
+```bash
+ENABLE_PREMARKET=true     # Escanear premarket
+ENABLE_AFTERHOURS=false   # Ahorrar quota after hours
+WEEKEND_PAUSE=true        # Pausa total en fines de semana
 ```
 
 ## 📊 Estrategias Implementadas
