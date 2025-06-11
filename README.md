@@ -5,6 +5,7 @@ Sistema automatizado para detectar oportunidades de trading en small caps con en
 ## 📊 Estado del Sistema
 
 **✅ Bot Activo en GCP VM** - Funcionando 24/7 con auto-deployment desde GitHub Actions
+**📢 Canal de Alertas** - Premarket Pulse - Small Caps configurado y activo
 
 **🔥 Características principales:**
 - Gap scanner automático (>5% gaps)
