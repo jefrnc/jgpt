@@ -1,0 +1,80 @@
+{
+  "project": "trading-bot",
+  "last_updated": "2024-06-12",
+  "status": "fully_deployed",
+  "key_features": {
+    "flash_research": {
+      "status": "integrated",
+      "method": "selenium_scraper",
+      "credentials": {
+        "email": "jsfrnc@gmail.com",
+        "password": "ge1hwZxFeN"
+      },
+      "extracts": ["gap_day", "day_2", "historical_gaps", "financial_metrics", "sec_filings", "notes"],
+      "session_persistence": true,
+      "alerts_mention_source": false
+    },
+    "openai": {
+      "status": "integrated",
+      "model": "gpt-4",
+      "purpose": ["pattern_recognition", "playbook_generation", "risk_assessment"],
+      "language": "english_only"
+    },
+    "scoring": {
+      "components": ["gap_score", "volume_score", "float_score", "historical_score", "ai_score"],
+      "total": 100,
+      "formula": "sum_of_components"
+    },
+    "alerts": {
+      "platform": "telegram",
+      "language": "english",
+      "includes": ["score", "historical_edge", "continuation_rate", "ai_insights"],
+      "excludes": ["flash_research_mentions", "risk_reward_signals"]
+    }
+  },
+  "deployment": {
+    "platform": "gcp",
+    "vm_name": "flask-vm",
+    "project_id": "gap-detector-49a13",
+    "zone": "us-central1-a",
+    "service": "trading-bot.service",
+    "status": "active",
+    "dependencies": {
+      "chrome": "137.0.7151.103",
+      "chromedriver": "installed",
+      "python_packages": ["selenium", "openai==1.6.1", "schedule", "beautifulsoup4", "requests", "python-telegram-bot"]
+    }
+  },
+  "files": {
+    "flash_scraper": "/src/api/flash_research_final_scraper.py",
+    "flash_client": "/src/api/flash_research_client.py",
+    "openai_client": "/src/api/openai_client.py",
+    "main": "/src/main.py",
+    "test_script": "vm_quick_test.py"
+  },
+  "working_examples": {
+    "KLTO": {
+      "gaps": 53,
+      "continuation_rate": 83,
+      "edge_score": 82
+    },
+    "AAPL": {
+      "gaps": 58,
+      "continuation_rate": 70,
+      "edge_score": 81
+    }
+  },
+  "user_requirements": [
+    "no_risk_reward_signals",
+    "english_only_alerts",
+    "no_flash_research_mentions",
+    "day_trader_focus",
+    "statistical_edge_emphasis"
+  ],
+  "technical_solutions": {
+    "nextjs_spa_navigation": "selenium_button_clicks",
+    "session_management": "persistent_chrome_profile",
+    "multi_tab_extraction": "comprehensive_gap_data_method",
+    "vm_chrome_setup": "headless_configuration"
+  }
+}

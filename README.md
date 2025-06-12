@@ -6,11 +6,15 @@ Sistema automatizado para detectar oportunidades de trading en small caps con en
 
 **✅ Bot Activo en GCP VM** - Funcionando 24/7 con auto-deployment desde GitHub Actions
 **📢 Canal de Alertas** - Premarket Pulse - Small Caps configurado y activo
+**🤖 AI Integration** - Pattern recognition y statistical edge analysis implementado
 
 **🔥 Características principales:**
 - Gap scanner automático (>5% gaps)
 - Float screener para microfloat detection  
-- Alertas de Telegram en tiempo real
+- **AI Pattern Recognition** con OpenAI GPT-4
+- **Statistical Edge Analysis** con datos históricos
+- Sistema de scoring inteligente (0-100 puntos)
+- Alertas de Telegram en tiempo real (English only)
 - Market hours detection inteligente
 - Auto-deployment con cada push to main
 
@@ -90,10 +94,11 @@ jgpt/
    TELEGRAM_CHAT_ID=tu_chat_id
    ```
 
-### APIs Adicionales (Próximamente)
-- **Finnhub**: Para datos fundamentales y float
-- **Benzinga**: Para noticias en tiempo real
-- **OpenAI/Claude**: Para análisis inteligente
+### APIs Adicionales
+- **Finnhub**: Datos fundamentales y float ✅
+- **OpenAI**: Análisis de patrones con GPT-4 ✅
+- **Statistical Data**: Edge histórico integrado ✅
+- **Benzinga**: Para noticias en tiempo real (próximamente)
 
 ## 🎯 Uso Básico
 
@@ -153,10 +158,13 @@ flake8 src/
 - [x] Scanner básico de gaps
 - [x] Sistema de alertas Telegram
 - [x] **SISTEMA FUNCIONAL** 🎉
-- [ ] Integración AI para análisis
-- [ ] Scanner de float/fundamentales  
+- [x] Integración AI para análisis (OpenAI GPT-4) ✅
+- [x] Scanner de float/fundamentales (Finnhub) ✅
+- [x] Statistical edge analysis ✅
+- [x] Sistema de scoring inteligente (0-100) ✅
 - [ ] Dashboard web
 - [ ] Backtesting framework
+- [ ] Risk management automático
 
 ## ⚠️ Disclaimer
 

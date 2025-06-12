@@ -1,0 +1,1 @@
+# Analysis module for AI-powered pattern recognition and playbook generation
